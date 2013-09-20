@@ -48,12 +48,12 @@ multiple_pgn = """
 
 
 def test_single_pgn(single_pgn):
-    from pgn import PGN
-    pgn = PGN(single_pgn)
-    _test(pgn.tags['event'] == 'Event name',
+    from pgn import Game
+    pgn = Game(single_pgn)
+    _test(pgn.event == 'Event name',
           "Event name: " + pgn.tags['event'])
     _test(pgn.tags['result'] == '0-1',
-          "Result: " + pgn.tags['result'])
+          "Result: " + pgn.tags.get('result', 'nothing'))
     _test(pgn.moves_string == '1.e4 d5 2.Nc3 d4 3.Nb5 e5 4.d3 Bd7 5.Qh5 Nc6 \
 6.Bg5 Nf6 7.Qh4 a6 8.Nxc7+ Qxc7 9.Bxf6 Nb4 10.Rc1 Nxa2 11.Bg5 Nxc1 \
 12.Bxc1 Qxc2 13.Qg5 Bb4+ 14.Bd2 Ba4 15.Be2 Qc1+ 16.Bd1 Qxd1# 0-1',
