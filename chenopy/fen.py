@@ -1,8 +1,18 @@
 # -*- coding: utf-8 -*-
+"""Tools to parse FEN."""
+
+from __future__ import unicode_literals
 
 
 class Position(object):
+
     """Represents a FEN and provides parsing functionality."""
+
+    LETTER_PIECES = ['K', 'Q', 'B', 'N', 'R', 'P',
+                     'k', 'q', 'b', 'n', 'r', 'p', ' ']
+    GRAPHICAL_PIECES = ['♔', '♕', '♗', '♘', '♖', '♙',
+                        '♚', '♛', '♝', '♞', '♜', '♟', ' ']
+
     def __init__(self, fen_str=None):
         self.fen_str = fen_str
         self.fen_board = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'
@@ -33,13 +43,13 @@ class Position(object):
 
     def display_board(self, row_del="\n", cell_del=' ',
                       with_rank=False, graphical=False):
-        """Print the board in a user friendly way."""
+        """Return the board in a user friendly str."""
         board = self.graphical_board if graphical else self.board
         rows = [cell_del.join(cells) for cells in board]
         if with_rank:
             rank = 1
-            for row in rows:
-                row = str(rank) + cell_del + row
+            for index, row in enumerate(rows):
+                rows[index] = str(rank) + cell_del + row
                 rank += 1
         return row_del.join(rows)
 
@@ -49,7 +59,7 @@ class Position(object):
         for row in rows:
             cells = list(row)
             row = []
-            for cnum, cell in enumerate(cells):
+            for cell in cells:
                 if cell.isdigit():
                     row.extend(' ' * int(cell))
                 else:
@@ -69,24 +79,23 @@ class Position(object):
         return graphical_board
 
     def __repr__(self):
-        return "%s('%s')" % ('fen', self.fen_str)
+        return "%s('%s')" % ('chenopy.fen.Position', self.fen_str)
 
     def __str__(self):
         return self.fen_str
 
     def _get_graphical_piece(self, piece, status=False):
-        LETTER_PIECES = ['K', 'Q', 'B', 'N', 'R', 'P',
-                         'k', 'q', 'b', 'n', 'r', 'p', ' ']
-        GRAPHICAL_PIECES = [u'♔', u'♕', u'♗', u'♘', u'♖', u'♙',
-                            u'♚', u'♛', u'♝', u'♞', u'♜', u'♟', ' ']
-        rtn = GRAPHICAL_PIECES[LETTER_PIECES.index(piece)]
+        graphical = self.GRAPHICAL_PIECES
+        letter = self.LETTER_PIECES
+        rtn = graphical[letter.index(piece)]
         if status:
-            rtn = (GRAPHICAL_PIECES[LETTER_PIECES.index(piece.lower())], 'w'
-                   if piece in LETTER_PIECES[:6] else 'b')
+            rtn = (graphical[letter.index(piece.lower())], 'w'
+                   if piece in letter[:6] else 'b')
         return rtn
 
 
 def fen_parse(fen):
+    """Return tuple of FEN component parts from string."""
     (fen_board,
      active_color,
      fen_castling,
