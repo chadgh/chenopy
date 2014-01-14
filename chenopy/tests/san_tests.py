@@ -18,6 +18,10 @@ VALID_SAN = ['e4', 'e5', 'Nf3', 'Nc6', 'Bb5', 'a6', 'Ba4', 'Nf6', 'O-O-O',
              'fxe1=Q']
 
 
+INVALID_SAN = ['z2', '2f', 'xe1', 'a', '1', 'asdf', '', 't2', 'bb2', 'Bh9',
+               'KQb2', '0-0', 'fxe1=K', 'f20', 'e13', 'Kb20', 'Qxxf3', ' ']
+
+
 def test_valid_san():
     for m in VALID_SAN:
         yield check_san, m
@@ -29,10 +33,7 @@ def check_san(move):
 
 
 def test_invalid_move():
-    moves = ['z2', '2f', 'xe1', 'a', '1', 'asdf',
-             '', 't2', 'bb2', 'Bh9', 'KQb2', '0-0',
-             'fxe1=K', 'f20', 'e13', 'Kb20', 'Qxxf3']
-    for m in moves:
+    for m in INVALID_SAN:
         yield check_invalid_san, m
 
 
