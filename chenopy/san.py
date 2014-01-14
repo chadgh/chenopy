@@ -1,64 +1,62 @@
+# -*- coding: utf-8 -*-
+"""Tools to parse and use SAN strings."""
+
+from __future__ import unicode_literals
+
 import re
 
 
-def valid_san(san_string):
-    pass
-
-
 class Move(object):
-    pawn = 'P'
-    king = 'K'
-    queen = 'Q'
-    bishop = 'B'
-    knight = 'N'
-    rook = 'R'
 
-    castle_kingside = 'O-O'
-    castle_queenside = 'O-O-O'
+    """Represents a simple valid move in SAN."""
 
-    check = '+'
-    checkmate = '#'
-    promotion = '='
-    capture = 'x'
+    PAWN = 'P'
+    KING = 'K'
+    QUEEN = 'Q'
+    BISHOP = 'B'
+    KNIGHT = 'N'
+    ROOK = 'R'
 
-    valid_pieces = [pawn,
-                    king,
-                    queen,
-                    bishop,
-                    knight,
-                    rook]
+    CASTLE_KINGSIDE = 'O-O'
+    CASTLE_QUEENSIDE = 'O-O-O'
 
-    valid_promotions = [queen,
-                        bishop,
-                        knight,
-                        rook]
+    CHECK = '+'
+    CHECKMATE = '#'
+    PROMOTION = '='
+    CAPTURE = 'x'
 
-    valid_castle_moves = [castle_kingside,
-                          castle_queenside,
-                          ]
+    VALID_PIECES = "{0}{1}{2}{3}{4}".format(KING,
+                                            QUEEN,
+                                            BISHOP,
+                                            KNIGHT,
+                                            ROOK)
 
-    valid_rank = range(1, 9)
-    valid_file = 'abcdefgh'
+    VALID_PROMOTIONS = "{0}{1}{2}{3}".format(QUEEN,
+                                             BISHOP,
+                                             KNIGHT,
+                                             ROOK)
 
-    san_re = re.compile(r'''([a-h]          # pawn move
-                            ([1-8]|       # simple move
-                             x[a-h][1-8]  # move with capture
-                             )(=[QBNR])?  # promotion
-                           |
-                           [KQBNR]        # other piece move
-                            [a-h]?        # file disambiguation
-                            [1-8]?        # rank disambiguation
-                            x?            # capture?
-                            [a-h][1-8]    # move location
-                           |
-                           O\-O(\-O)?     # castle move
-                          )\+?\#?         # optional check or checkmate''',
-                        re.VERBOSE)
+    VALID_CASTLE_MOVES = [
+        CASTLE_KINGSIDE,
+        CASTLE_QUEENSIDE,
+    ]
 
-    def __init__(self, san, parent=None, previous=None):
+    VALID_RANK = range(1, 9)
+    VALID_FILE = 'abcdefgh'
+
+    SAN_CASTLE_RE = r'^O\-O(\-O)?'
+    SAN_CHECKS_RE = r'(\+?|\#?)'
+    SAN_PAWN_MOVE_RE = r'^[a-h]([1-8]|x[a-h][1-8])(\=[QBNR])?'
+    SAN_MAJOR_PIECE_MOVE_RE = r'^[KQBNR]([a-h]?[1-8]?)?x?[a-h][1-8]'
+    SAN_ALL_RE = r'({pawn}|{major}|{castle}){checks}$'
+    SAN_RE = re.compile(SAN_ALL_RE.format(castle=SAN_CASTLE_RE,
+                                          checks=SAN_CHECKS_RE,
+                                          pawn=SAN_PAWN_MOVE_RE,
+                                          major=SAN_MAJOR_PIECE_MOVE_RE))
+
+    def __init__(self, san):
         self.san = san
-        if not self.san_re.match(san):
-            raise ValueError(san + " not valid")
+        self.san_parts = list(self.san)
         self.is_check = False
         self.is_checkmate = False
         self.is_capture = False
@@ -67,56 +65,47 @@ class Move(object):
         self.promotion_to = None
         self.piece_moved = None
         self.new_square = None
-        self.parent_move = parent      # pieces last move
-        self.previous_move = previous  # previous move in game
-        self._parse()
+
+        if self.SAN_RE.match(san):
+            self._parse()
+        else:
+            self._raise_value_error()
 
     def _parse(self):
-        parts = list(self.san)
-        if parts[0] in self.valid_pieces:
-            self.piece_moved = parts[0]
-        elif parts[0] in self.valid_file:
-            self.piece_moved = self.pawn
-        elif self.san in self.valid_castle_moves:
-            self.piece_moved = self.king
-            self.is_castle = True
+        self._which_piece_moved()
+        self._check_checks()
+        self._is_promotion()
 
-        if self.check in parts:
-            self.is_check = True
-
-        if self.checkmate in parts:
-            self.is_check = True
-            self.is_checkmate = True
-
-        if self.promotion in parts:
-            self.promotion = True
-            index = parts.index(self.promotion) + 1
-            if parts[index] in self.valid_promotions:
-                self.promotion_to = parts[index]
-
-        if self.capture in parts:
+        if self.CAPTURE in self.san_parts:
             self.is_capture = True
 
         matches = re.findall(r'[a-h][1-8]', self.san)
         if len(matches) != 0:
             self.new_square = matches[-1]
 
+    def _is_promotion(self):
+        if self.PROMOTION in self.san_parts:
+            self.is_promotion = True
+            index = self.san_parts.index(self.PROMOTION) + 1
+            if self.san_parts[index] in self.VALID_PROMOTIONS:
+                self.promotion_to = self.san_parts[index]
 
-if __name__ == '__main__':
-    move = Move('Qe4xd5+')
-    assert move.new_square == 'd5'
-    assert move.piece_moved == move.queen
-    assert move.is_capture
-    assert move.is_check
-    assert not move.is_checkmate
-    assert not move.is_promotion
+    def _check_checks(self):
+        if self.CHECK in self.san_parts:
+            self.is_check = True
 
-    move = Move('e4')
-    assert move.new_square == 'e4'
-    assert move.piece_moved == move.pawn
+        if self.CHECKMATE in self.san_parts:
+            self.is_check = True
+            self.is_checkmate = True
 
-    move = Move('O-O')
-    assert move.piece_moved == move.king, move.piece_moved
-    assert move.is_castle
-    assert not move.is_capture
-    assert not move.is_check
+    def _which_piece_moved(self):
+        if self.san_parts[0] in self.VALID_PIECES:
+            self.piece_moved = self.san_parts[0]
+        elif self.san_parts[0] in self.VALID_FILE:
+            self.piece_moved = self.PAWN
+        elif self.san in self.VALID_CASTLE_MOVES:
+            self.piece_moved = self.KING
+            self.is_castle = True
+
+    def _raise_value_error(self):
+        raise ValueError("{0} is not valid SAN.".format(self.san))
