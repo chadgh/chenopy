@@ -9,5 +9,7 @@ setup(name='Chenopy',
       url='https://github.com/chadgh/chenopy',
       packages=['chenopy', 'chenopy.tests'],
       license='Creative Commons Attribution-Noncommercial-Share Alike license',
-      long_description=open('README.md').read(),
-      tests_require=['coverage==3.7.1', 'nose==1.3.0'])
+      long_description=open('README').read(),
+      tests_require=['coverage==3.7.1', 'nose==1.3.0'],
+      include_package_data=True,
+      )
